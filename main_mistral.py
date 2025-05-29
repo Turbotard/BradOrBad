@@ -1,6 +1,10 @@
 import streamlit as st
 import os
+from dotenv import load_dotenv
 from brad_mistral_agent import BradMistralAgent
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 # Configuration de la page Streamlit
 st.set_page_config(
@@ -110,8 +114,13 @@ st.markdown("""
 def initialize_session_state():
     """Initialise les variables de session Streamlit"""
     if 'brad_agent' not in st.session_state:
-        # Utilisation de la clé API Mistral fournie
-        api_key = "NkYZDCHNh39w16a0N5R0gZnUNLop4ZCO"
+        # Récupération de la clé API Mistral depuis les variables d'environnement
+        api_key = os.getenv('MISTRAL_API_KEY')
+        
+        if not api_key:
+            st.error("⚠️ Clé API Mistral non trouvée ! Vérifiez votre fichier .env")
+            st.stop()
+        
         st.session_state.brad_agent = BradMistralAgent(api_key=api_key)
     
     if 'conversation_started' not in st.session_state:
