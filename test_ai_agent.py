@@ -5,15 +5,19 @@ Script de test pour l'agent IA Brad sans interface Streamlit
 
 from brad_ai_agent import BradAIAgent
 import json
+import os
 
 def test_brad_agent():
-    """Test simple de l'agent IA Brad"""
-    
-    print("🎭 Test de l'agent IA Brad Pitt")
+    """Test de l'agent Brad avec des interactions simulées"""
+    print("🎭 Test de l'agent Brad AI - Style avancé")
     print("=" * 50)
     
-    # Initialisation avec la clé API
-    api_key = "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"
+    # Configuration avec variable d'environnement
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Erreur: Variable d'environnement OPENAI_API_KEY non définie")
+        print("💡 Veuillez définir votre clé API OpenAI dans les variables d'environnement")
+        return False
     
     try:
         agent = BradAIAgent(api_key=api_key)

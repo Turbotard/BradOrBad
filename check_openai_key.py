@@ -4,186 +4,201 @@ Script de diagnostic complet OpenAI selon l'analyse de Benjamin
 Teste organisation, type de clé, accès API, etc.
 """
 
+import sys
 import openai
 from openai import OpenAI
-import json
+import os
 
 def analyze_api_key_format(api_key):
     """Analyse le format de la clé API"""
-    print("🔍 Analyse du format de clé API:")
+    print(f"\n🔍 Analyse du format de clé")
     print(f"🔑 Clé: {api_key[:20]}...{api_key[-10:]}")
     print(f"📏 Longueur: {len(api_key)} caractères")
     
     if api_key.startswith("sk-"):
         if "proj-" in api_key:
-            print("⚠️ Type: Clé PROJECT (sk-proj-...)")
-            print("💡 Peut ne pas marcher avec tous les endpoints")
+            print("✅ Format: Clé projet (sk-proj-...)")
             return "project"
         else:
-            print("✅ Type: Clé API standard (sk-...)")
+            print("✅ Format: Clé standard (sk-...)")
             return "standard"
     elif api_key.startswith("sess-"):
-        print("❌ Type: Clé SESSION (sess-...)")
-        print("🚫 Ne fonctionne PAS avec l'API - seulement ChatGPT web")
+        print("⚠️ Format: Clé session (temporaire)")
         return "session"
     else:
-        print("❓ Type: Format inconnu")
-        return "unknown"
+        print("❌ Format: Clé invalide ou inconnue")
+        return "invalid"
 
-def test_with_new_client():
+def test_new_syntax():
     """Test avec la nouvelle syntaxe OpenAI v1.x"""
-    api_key = "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"
     
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Variable d'environnement OPENAI_API_KEY non définie")
+        return False
+        
     print("\n🧪 Test avec OpenAI v1.x (nouvelle syntaxe)")
-    print("=" * 50)
     
     try:
+        analyze_api_key_format(api_key)
+        
         client = OpenAI(api_key=api_key)
-        print(f"✅ Client créé: {type(client)}")
         
-        # Vérifier l'organisation
-        print(f"🏢 Organisation: {getattr(client, 'organization', 'Non spécifiée')}")
-        
-        # Test minimal
+        print("\n💬 Test chat completion...")
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": "Salut, qui es-tu ?"}],
+            messages=[
+                {"role": "user", "content": "Bonjour, répondez juste 'Test réussi'"}
+            ],
             max_tokens=10
         )
         
-        print("🎉 SUCCESS avec nouvelle syntaxe !")
-        print(f"💬 Réponse: {response.choices[0].message.content}")
-        return True, "new_syntax"
+        result = response.choices[0].message.content
+        print(f"✅ Réponse: {result}")
+        print("🎉 Nouvelle syntaxe: FONCTIONNELLE")
+        return True
         
     except Exception as e:
-        print(f"❌ Erreur nouvelle syntaxe: {str(e)[:100]}...")
-        return False, str(e)
+        print(f"❌ Erreur nouvelle syntaxe: {e}")
+        return False
 
-def test_with_old_client():
+def test_old_syntax():
     """Test avec l'ancienne syntaxe OpenAI v0.x"""
-    api_key = "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"
     
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Variable d'environnement OPENAI_API_KEY non définie")
+        return False
+        
     print("\n🧪 Test avec OpenAI v0.x (ancienne syntaxe)")
-    print("=" * 50)
     
     try:
+        # Configuration globale (ancienne méthode)
         openai.api_key = api_key
         
-        # Test avec ancienne syntaxe
+        # Ancienne méthode de chat completion
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": "Salut, qui es-tu ?"}],
+            messages=[
+                {"role": "user", "content": "Dites juste 'Test OK'"}
+            ],
             max_tokens=10
         )
         
-        print("🎉 SUCCESS avec ancienne syntaxe !")
-        print(f"💬 Réponse: {response.choices[0].message.content}")
-        return True, "old_syntax"
+        result = response.choices[0].message.content
+        print(f"✅ Réponse: {result}")
+        print("🎉 Ancienne syntaxe: FONCTIONNELLE")
+        return True
         
     except Exception as e:
-        print(f"❌ Erreur ancienne syntaxe: {str(e)[:100]}...")
-        return False, str(e)
+        print(f"❌ Erreur ancienne syntaxe: {e}")
+        return False
 
-def test_organizations():
-    """Test avec différentes organisations"""
-    api_key = "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"
+def test_models_and_limits():
+    """Test des modèles disponibles et limites"""
     
-    print("\n🏢 Test des organisations")
-    print("=" * 30)
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Variable d'environnement OPENAI_API_KEY non définie")
+        return False
+        
+    print("\n🤖 Test des modèles disponibles")
     
-    # Test sans organisation spécifique
     try:
         client = OpenAI(api_key=api_key)
         
-        # Essayer de lister les modèles pour voir l'org
-        models = client.models.list()
-        print(f"✅ Connexion réussie à l'organisation par défaut")
-        print(f"📋 {len(models.data)} modèles disponibles")
+        # Test avec différents modèles
+        models_to_test = ["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4"]
+        
+        for model in models_to_test:
+            try:
+                print(f"\n🧪 Test {model}...")
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": "Hi"}],
+                    max_tokens=5
+                )
+                print(f"✅ {model}: Disponible")
+                
+            except Exception as e:
+                if "model" in str(e).lower():
+                    print(f"❌ {model}: Non disponible dans votre plan")
+                else:
+                    print(f"❌ {model}: Erreur - {str(e)[:50]}...")
         
         return True
         
     except Exception as e:
-        print(f"❌ Problème organisation: {str(e)[:100]}...")
+        print(f"❌ Erreur test modèles: {e}")
         return False
 
-def diagnostic_solutions(key_type, errors):
-    """Propose des solutions selon le diagnostic"""
-    print("\n🛠️ DIAGNOSTIC ET SOLUTIONS")
-    print("=" * 40)
+def diagnose_errors(api_key):
+    """Diagnostic avancé des erreurs"""
+    print("\n🔧 Diagnostic avancé")
     
-    if key_type == "project":
-        print("🔸 Problème probable: Clé PROJECT mal configurée")
-        print("✅ Solutions:")
+    if not api_key:
+        print("❌ Clé API manquante")
         print("1. 📍 Va sur https://platform.openai.com/account/api-keys")
-        print("2. 🔑 Crée une nouvelle clé 'User' (pas Project)")
-        print("3. 🗑️ Supprime l'ancienne clé project")
-        
-    elif key_type == "session":
-        print("🔸 Problème: Clé SESSION invalide pour l'API")
-        print("✅ Solutions:")
-        print("1. 🚫 Cette clé ne marche QUE pour ChatGPT web")
+        print("2. 🔑 Génère une nouvelle clé")
+        print("3. 💾 Sauvegarde-la dans tes variables d'environnement")
+        return
+    
+    # Vérifications de format
+    key_type = analyze_api_key_format(api_key)
+    
+    if key_type == "invalid":
         print("2. 🔑 Crée une vraie clé API sur platform.openai.com")
-        
-    elif "429" in str(errors):
-        print("🔸 Problème: Quota/Organisation")
-        print("✅ Solutions:")
+        return
+    
+    print("\n🏢 Vérifications organisationnelles")
+    if key_type == "project":
         print("1. 🏢 Vérifie ton organisation sur platform.openai.com/account/org-settings")
-        print("2. 💳 Va sur Billing → vérifie que l'API est activée")
-        print("3. 💰 Assure-toi que tes 15$ sont dans la BONNE organisation")
-        print("4. 🔄 Change le budget mensuel de $0 à $5-10")
-        
-    elif "401" in str(errors):
-        print("🔸 Problème: Authentification")
-        print("✅ Solutions:")
-        print("1. 🔑 Clé API invalide - regénère-la")
-        print("2. ⏰ Clé expirée")
-        print("3. 🏢 Mauvaise organisation")
-        
-    print(f"\n📞 Si rien ne marche:")
+        print("2. 💳 Vérifie le mode de paiement de l'organisation")
+        print("3. 📊 Vérifie les quotas sur platform.openai.com/account/usage")
+    
+    print("\n💰 Si tu as des erreurs de quota:")
+    print("• Vérifie ton solde")
+    print("• Ajoute un mode de paiement")
+    print("• Vérifie les limites de dépenses")
+    print("• Attends le renouvellement mensuel")
+    
+    print("\n🆘 Si rien ne fonctionne:")
     print("• Contacte le support OpenAI")
-    print("• Ou utilise le mode de secours (qui fonctionne très bien !)")
+    print("• Vérifie les status sur status.openai.com")
 
 def main():
-    """Diagnostic complet"""
+    """Fonction principale du diagnostic"""
     print("🔬 DIAGNOSTIC COMPLET OPENAI - Style Benjamin")
     print("=" * 60)
     
-    api_key = "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"
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Variable d'environnement OPENAI_API_KEY non définie")
+        print("💡 Définissez votre clé API avec: export OPENAI_API_KEY='votre_clé'")
+        diagnose_errors(None)
+        return
     
-    # 1. Analyse du format
     key_type = analyze_api_key_format(api_key)
     
-    errors = []
+    # Tests selon les recommandations de Benjamin
+    print(f"\n🎯 Tests adaptés pour clé {key_type}")
     
-    # 2. Test nouvelle syntaxe
-    success_new, error_new = test_with_new_client()
-    if not success_new:
-        errors.append(error_new)
+    success_new = test_new_syntax()
+    success_old = test_old_syntax() if not success_new else True
+    success_models = test_models_and_limits()
     
-    # 3. Test ancienne syntaxe  
-    success_old, error_old = test_with_old_client()
-    if not success_old:
-        errors.append(error_old)
+    print(f"\n📊 RÉSULTATS FINAUX")
+    print("=" * 30)
+    print(f"✅ Nouvelle syntaxe: {'✅' if success_new else '❌'}")
+    print(f"✅ Ancienne syntaxe: {'✅' if success_old else '❌'}")
+    print(f"✅ Modèles testés: {'✅' if success_models else '❌'}")
     
-    # 4. Test organisations
-    org_success = test_organizations()
-    
-    # 5. Résultats et solutions
-    print(f"\n🎯 RÉSULTATS FINAUX")
-    print("=" * 25)
-    
-    if success_new or success_old:
-        print("🎉 API FONCTIONNELLE !")
-        syntax = "nouvelle" if success_new else "ancienne"
-        print(f"✅ Marche avec syntaxe {syntax}")
-        print("🚀 Brad peut utiliser l'IA complète !")
+    if success_new:
+        print("\n🎉 SUCCESS! API fonctionnelle")
+        print("🚀 Brad peut utiliser l'IA complète")
     else:
-        print("⚠️ API NON FONCTIONNELLE")
-        print("🛡️ Brad utilisera le mode de secours")
-        diagnostic_solutions(key_type, errors)
-    
-    print(f"\n💻 Ton app Brad ou Bad fonctionne parfaitement quoi qu'il arrive !")
+        print("\n⚠️ Problèmes détectés")
+        diagnose_errors(api_key)
 
 if __name__ == "__main__":
-    main()
-    input("\nAppuyez sur Entrée pour continuer...") 
+    main() 

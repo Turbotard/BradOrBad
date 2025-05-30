@@ -102,8 +102,10 @@ st.markdown("""
 def initialize_session_state():
     """Initialise les variables de session Streamlit"""
     if 'brad_agent' not in st.session_state:
-        # Utilisation de la clé API fournie
-        api_key = "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"
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            st.error("❌ Clé API OpenAI manquante. Veuillez définir la variable d'environnement OPENAI_API_KEY")
+            st.stop()
         st.session_state.brad_agent = BradAIAgent(api_key=api_key)
     
     if 'conversation_started' not in st.session_state:

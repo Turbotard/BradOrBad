@@ -4,8 +4,10 @@ Test avancé OpenAI basé sur les suggestions de Benjamin
 Diagnostic complet : modèles, organisations, quotas
 """
 
+import time
 from openai import OpenAI
 import json
+import os
 
 def test_connection_advanced():
     """Test de connexion avancé selon les suggestions de Benjamin"""
@@ -13,7 +15,12 @@ def test_connection_advanced():
     print("🔬 Test OpenAI avancé - Style Benjamin")
     print("=" * 50)
     
-    api_key = "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"
+    # Configuration avec variable d'environnement
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Erreur: Variable d'environnement OPENAI_API_KEY non définie")
+        print("💡 Définissez votre clé API avec: export OPENAI_API_KEY='votre_clé'")
+        return False
     
     print(f"🔑 API Key: {api_key[:20]}...{api_key[-10:]}")
     print(f"📏 Longueur: {len(api_key)} caractères")

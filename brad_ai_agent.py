@@ -7,6 +7,7 @@ from openai import OpenAI
 import json
 import random
 from typing import Dict, List, Optional, Tuple
+import os
 
 class BradAIAgent:
     """Agent IA qui joue Brad Pitt dans une arnaque sentimentale progressive"""
@@ -18,12 +19,18 @@ class BradAIAgent:
         Args:
             api_key: Clé API OpenAI (si None, utilise la variable d'environnement)
         """
+        # Utiliser la clé fournie ou chercher dans les variables d'environnement
         if api_key:
             self.client = OpenAI(api_key=api_key)
-            print(f"🤖 Client OpenAI initialisé: {self.client}")
+            print(f"🤖 Client OpenAI initialisé avec clé fournie")
         else:
-            self.client = None
-            print("⚠️ Aucune clé API fournie - Mode de secours activé")
+            env_key = os.getenv('OPENAI_API_KEY')
+            if env_key:
+                self.client = OpenAI(api_key=env_key)
+                print(f"🤖 Client OpenAI initialisé avec variable d'environnement")
+            else:
+                self.client = None
+                print("⚠️ Aucune clé API trouvée - Mode de secours activé")
         
         self.conversation_history = []
         self.user_profile = {
